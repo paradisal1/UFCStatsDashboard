@@ -1,0 +1,5 @@
+/database/*
+configs.py
+__pycache__/
+.vscode/*
+.scrapy
