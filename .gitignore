@@ -1,5 +1,8 @@
-/database/*
+/database/images*
 configs.py
 __pycache__/
 .vscode/*
 .scrapy
+
+*.png
+*.db
