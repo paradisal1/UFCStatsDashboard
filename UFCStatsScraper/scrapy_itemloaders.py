@@ -386,6 +386,48 @@ class OfficialUFCFighterLoader(ItemLoader):
             "Ground_Strikes",
             "//div[@class='c-stat-3bar__group']/div[contains(text(),'Ground')]/following-sibling::div/text()",
         ),
+        (
+            "Place of Birth",
+            "//div[@class='c-bio__field c-bio__field--border-bottom-small-screens']/div[2]/text()",
+        ),
+        (
+            "Record",
+            "//p[@class='hero-profile__division-body']/text()"
+        ),
+        (
+            'Height',
+            "//div[@class = 'c-bio__label'][text() = 'Height'] /following-sibling::div/text()"
+        ),
+        (
+            'Weight',
+            "//div[@class = 'c-bio__label'][text() = 'Weight'] /following-sibling::div/text()"
+        )
+        (
+            'Reach',
+            "//div[@class = 'c-bio__label'][text() = 'Reach'] /following-sibling::div/text()"
+        ),
+        (
+            'Leg Reach',
+            '//div[@class = "c-bio__label"][text() = "Leg reach"] /following-sibling::div/text()'
+        ),
+        (
+            'Age',
+            '//div[@class = "c-bio__label"][text() = "Age"] /following-sibling::div/text()'
+        ),
+        (
+            'Head_SS',
+            '//*[@id="e-stat-body_x5F__x5F_head_value"]/text()'
+        ),
+        (
+            'Body_SS',
+            '//*[@id="e-stat-body_x5F__x5F_body_value"]/text()'
+        ),
+        (
+            'Leg_SS',
+            '//*[@id="e-stat-body_x5F__x5F_leg_value"]/text()'
+        )
+
+
     ]
 
     def __init__(self, response, *args, **kwargs):

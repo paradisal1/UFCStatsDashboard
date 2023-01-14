@@ -267,6 +267,8 @@ class OfficialUFCFighter(Item):
         "Standing_Strikes",
         "Clinch_Strikes",
         "Ground_Strikes",
+        "Place of Birth",
+        "Record"
     ]
     for field in fields_of_interest:
         locals()[field] = Field()

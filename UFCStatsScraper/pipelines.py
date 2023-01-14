@@ -4,10 +4,12 @@ from scrapy.exceptions import DropItem
 from itemadapter import ItemAdapter
 import logging
 
-import app.database.util.sql_strings as sql
+import UFCStatsGUI.database.util.sql_strings as sql
 import configs as cfg
 from scrapy.pipelines.images import ImagesPipeline
 from UFCStatsScraper.items import FighterImageItem
+from UFCStatsGUI.database.DBInterface import DBInterface
+
 
 
 class SQLPipeline:
@@ -23,6 +25,18 @@ class SQLPipeline:
         if isinstance(item, FighterImageItem):
             return item
         column_count = len(item)
+
+        if self.check_table_for_entry(item[self.field]):
+            import random
+
+            logging.getLogger().info(f"Item already exists in {self.spider_name} table")
+
+            if self.spider_name == 'fights':
+                item['EventName'] = item['EventName'] + str(random.randint(0, 100))
+            else:
+                item[self.field] = item[self.field] + str(random.randint(0, 100))
+
+
         table_name = spider.name
         _ = self.c.execute(
             f"""
@@ -30,22 +44,38 @@ class SQLPipeline:
             """,
             tuple(item.values()),
         )
-
         self.conn.commit()
         return item
 
     def close_spider(self, spider):
         self.conn.close()
+        self.db.close()
 
     def open_spider(self, spider):
-
-        table_name = spider.name
+        self.spider_name = table_name = spider.name
         sql_script = eval(f"sql.create_{table_name.upper()}_table_sql_string")
-
-        self.conn = sqlite3.connect(cfg.DB_PATH / "ufc_raw.db")
+        self.db = DBInterface("UFCStatsGUI/database/ufc_raw")
+        self.conn = self.db.conn
         self.c = self.conn.cursor()
-
         self.c.executescript(sql_script)
+        if self.spider_name in ['fighters', 'officialufcfighters']:
+            self.field = 'Fighter_Name'
+        else:
+            self.field = 'EventName'
+
+    def check_table_for_entry(self, value = None):
+        try:
+            if self.db(table=self.spider_name, column=self.field, value=value):
+                return True
+            else:
+                logging.getLogger().info("In else statement")
+                return False
+        except Exception:
+            return False
+
+
+
+
 
 
 class MyImagePipeline(ImagesPipeline):
