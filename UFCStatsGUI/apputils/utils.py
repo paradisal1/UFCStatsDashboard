@@ -11,7 +11,6 @@ def wr(arg):
 
 
 def get_fighters_by_last_name(letter):
-    import numpy as np
 
     db = DBInterface("database/ufc_silver")
     df = db.Pdf("combatants")

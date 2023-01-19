@@ -3,12 +3,16 @@ import sqlite3
 from pathlib import Path
 import logging
 import sys
+from contextlib import contextmanager
+
 
 try:
     logger = logging.getLogger(__name__)
 except:
     logger = logging.getLogger()
 logger.addHandler(logging.StreamHandler(sys.stdout))
+
+
 
 
 class DBInterface(object):
@@ -118,3 +122,5 @@ if __name__ == "__main__":
     df[df.duplicated('Fighter_Name', False)]
     dff = df['Fighter_Name'].str.split(' ', expand=True)[2].notnull()
     dfff = first_last_split(df[dff], 'Fighter_Name')
+
+if __name__ == '__main__':

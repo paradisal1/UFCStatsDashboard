@@ -1,4 +1,3 @@
-import sqlite3
 import scrapy
 from scrapy.exceptions import DropItem
 from itemadapter import ItemAdapter
@@ -26,17 +25,6 @@ class SQLPipeline:
             return item
         column_count = len(item)
 
-        if self.check_table_for_entry(item[self.field]):
-            import random
-
-            logging.getLogger().info(f"Item already exists in {self.spider_name} table")
-
-            if self.spider_name == 'fights':
-                item['EventName'] = item['EventName'] + str(random.randint(0, 100))
-            else:
-                item[self.field] = item[self.field] + str(random.randint(0, 100))
-
-
         table_name = spider.name
         _ = self.c.execute(
             f"""
@@ -62,6 +50,7 @@ class SQLPipeline:
             self.field = 'Fighter_Name'
         else:
             self.field = 'EventName'
+
 
     def check_table_for_entry(self, value = None):
         try:

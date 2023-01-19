@@ -1,5 +1,8 @@
 from scrapy.loader import ItemLoader
 from itemloaders.processors import TakeFirst, MapCompose
+import logging
+from scrapy import Request
+from scrapy.exceptions import IgnoreRequest
 
 
 from UFCStatsScraper.items import (
@@ -7,14 +10,155 @@ from UFCStatsScraper.items import (
     FightItem,
     EventItem,
     OfficialUFCFighter,
-    FighterImageItem,
+    ESPNFighter,
+    ESPNBouts
 )
 from UFCStatsScraper.utils.preprocessing import (
     remove_whitespace,
     remove_newlines,
     replace_empty_string,
-    set_logger,
 )
+
+logger = logging.getLogger(__name__)
+
+
+class ESPNBoutLoader(ItemLoader):
+    ''' ItemLoader for ESPNFighterItem '''
+    default_input_processor = MapCompose(remove_whitespace, replace_empty_string)
+    default_output_processor = TakeFirst()
+
+    bout_xpath_dict = {
+        'Date': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[1]/td[1]/text()",
+        'Opponent': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[1]/td[2]/a/text()",
+        'Event': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[1]/td[3]/a/text()",
+        'Result': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[1]/td[4]/div/text()",
+        'EventURL': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[1]/td[3]/a/@href",
+        ###############################
+        'Dist_Sig_Bdy_Strk_Prop': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[1]/td[5]/text()",
+        'Dist_Sig_Head_Strk_Prop': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[1]/td[6]/text()",
+        'Dist_Sig_Leg_Strk_Prop': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[1]/td[7]/text()",
+        'Tot_Strk_Atmpt': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[1]/td[8]/text()",
+        'Tot_Strk_Lnd': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[1]/td[9]/text()",
+        'Sig_Strk_Lnd': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[1]/td[10]/text()",
+        'Sig_Strk_Atmpt': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[1]/td[11]/text()",
+        'Tot_Strk_Prop': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[1]/td[12]/text()",
+        'Knockdowns': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[1]/td[13]/text()",
+        'Body_Percentage': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[1]/td[14]/text()",
+        'Head_Percentage': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[1]/td[15]/text()",
+        'Leg_Percentage': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[1]/td[16]/text()",
+        ###############################
+        'Sig_Clnch_Bdy_Lnd': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[2]/td[5]/text()",
+        'Sig_Clnch_Bdy_Atmpt': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[2]/td[6]/text()",
+        'Sig_Clnch_Head_Lnd': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[2]/td[7]/text()",
+        'Sig_Clnch_Head_Atmpt': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[2]/td[8]/text()",
+        'Sig_Clnch_Leg_Lnd': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[2]/td[9]/text()",
+        'Sig_Clnch_Leg_Atmpt': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[2]/td[10]/text()",
+        'Reversals': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[2]/td[11]/text()",
+        'Slam_Rate': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[2]/td[12]/text()",
+        'Tkdwn_Lnd': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[2]/td[13]/text()",
+        'Tkdwn_Atmpt': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[2]/td[14]/text()",
+        'Tkdwn_Slams': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[2]/td[15]/text()",
+        'Tkdwn_Acc': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[2]/td[16]/text()",
+        ###############################
+        'Sig_Grnd_Bdy_Lnd': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[3]/td[5]/text()",
+        'Sig_Grnd_Bdy_Atmpt': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[3]/td[6]/text()",
+        'Sig_Grnd_Head_Lnd': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[3]/td[7]/text()",
+        'Sig_Grnd_Head_Atmpt': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[3]/td[8]/text()",
+        'Sig_Grnd_Leg_Lnd': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[3]/td[9]/text()",
+        'Sig_Grnd_Leg_Atmpt': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[3]/td[10]/text()",
+        'Advances': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[3]/td[11]/text()",
+        'Adv_To_Back': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[3]/td[12]/text()",
+        'Adv_To_Hlf_Gd': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[3]/td[13]/text()",
+        'Adv_To_Mnt': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[3]/td[14]/text()",
+        'Adv_To_Side': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[3]/td[15]/text()",
+        'Submissions': f"(.//tr[contains(@class, 'Table__TR')][@data-idx=$idx])[3]/td[16]/text()",
+    }
+
+    def _init__(self, response, *args, **kwargs):
+        super().__init__(response=response, item=ESPNBouts(), *args, **kwargs)
+
+        fname = locals()['Fighter_Name'] = kwargs['Fighter_Name'] or '---'
+        bout_list = response.xpath("//tr[contains(@class, 'Table__TR')][@data-idx]")
+        max_idx = len(bout_list) / 3
+
+        all_bout_data = []
+        for i in range(max_idx):
+            single_bout_data = {}
+            single_bout_data['Fighter_Name'] = fname
+
+            for key, xpth in self.bout_xpaths.items():
+                single_bout_data[key] = response.xpath(xpth, idx=i).get('---')
+            all_bout_data.append(single_bout_data)
+
+
+
+
+
+
+class ESPNLoader(ItemLoader):
+    ''' ItemLoader for ESPNFighterItem '''
+    default_input_processor = MapCompose(
+        remove_whitespace,
+        replace_empty_string)
+    default_output_processor = TakeFirst()
+
+    overview_xpaths = {
+        'FName': "//span[@class='truncate min-w-0 fw-light']/text()",
+        'LName': "//span[@class='truncate min-w-0']/text()",
+        'Weight_Class': "//div[contains(@class, 'PlayerHeader__Main_Aside')]/div//li[2]/text()",
+        'Birthdate_Age': "//ul[contains(@class, 'PlayerHeader__Bio_List')]/li[2]/div[2]/div/text()",
+        'Team': "//ul[contains(@class, 'PlayerHeader__Bio_List')]/li[3]/div[2]/div/text()",
+        'Nickname': "//ul[contains(@class, 'PlayerHeader__Bio_List')]/li[4]/div[2]/div/text()",
+        'Stance': "//ul[contains(@class, 'PlayerHeader__Bio_List')]/li[5]/div[2]/div/text()",
+        'WLD': "//div[contains(@class, 'PlayerHeader__Right flex align-center')]//li[1]/div/div[2]/text()",
+        '(T)KO': "//div[contains(@class, 'PlayerHeader__Right flex align-center')]//li[2]/div/div[2]/text()",
+        'Sub': "//div[contains(@class, 'PlayerHeader__Right flex align-center')]//li[3]/div/div[2]/text()",
+        'Ht_Wt': "//ul[contains(@class, 'PlayerHeader__Bio_List')]/li[1]/div[2]/div/text()",
+        'Country': "//div[contains(@class, 'PlayerHeader__Main_Aside')]/div//li[1]/text()"
+    }
+
+    def __init__(self, response, *args, **kwargs):
+        super().__init__(response=response, item=ESPNFighter(), *args, **kwargs)
+        if response.xpath('//ul[contains(@class, "PlayerHeader__Bio_List")][li]'):
+            for key, xpth in self.overview_xpaths.items():
+                # Check the xpath exists before adding it to the item
+                if response.xpath(xpth).get():
+                    # Check if the item already has a value for the key
+                    if self.item[key] == '---':
+                        # Replace it if it does
+                        locals()[key] = self.replace_xpath(key, xpth)
+                        # Otherwise add it
+                    else: locals()[key] = self.add_xpath(key, xpth)
+                # If the xpath doesn't exist, put a placeholder in the item
+                else: locals()[key] = self.add_value(key, '---')
+            self.load_item()
+        else:
+            pass
+
+
+
+
+
+
+    # def load_bio_fields(self, response):
+    #     for key, value in self.bio_xpaths.items():
+    #         self.add_xpath(key, value)
+    #     self.load_item()
+
+    # def load_other_fields(self, response):
+    #     if not ['FName']:
+    #         locals()['FName'] = ''
+    #     if not locals()['LName']:
+    #         locals()['LName'] = ''
+    #     full_name = (locals()['FName'] + ' ' + locals()['LName']).title()
+    #     logger.info(full_name)
+
+    #     # Additional fields
+    #     self.add_xpath('Fighting_Style', f'//a[@class="AnchorLink"]/following-sibling::div//tr[@class="Table__TR Table__TR--sm Table__even"][td="{full_name}"]/td[2]/text()')
+    #     self.add_value('Full_Name', full_name)
+    #     self.add_value('FighterURL', response.url)
+
+    #     self.load_item()
 
 
 class FighterLoader(ItemLoader):
@@ -285,7 +429,7 @@ class FightLoader(ItemLoader):
         for field, xpath in self.field_xpaths:
             try:
                 locals()[field] = self.add_xpath(field, xpath)
-            except Exception as e:
+            except Exception:
                 locals()[field] = self.add_value(field, "---")
 
         for field, xpath in self.judge_xpaths:
@@ -314,7 +458,7 @@ class FightLoader(ItemLoader):
                 bonus_present_bool = response.xpath(
                     f"*//img[contains(@src, '{bonus}.png')]"
                 ) not in (None, [], "")
-            except Exception as e:
+            except Exception:
                 locals()[f"{bonus}_bonus"] = self.add_value(f"{bonus}_bonus", "0")
             else:
                 if bonus_present_bool:
@@ -387,7 +531,7 @@ class OfficialUFCFighterLoader(ItemLoader):
             "//div[@class='c-stat-3bar__group']/div[contains(text(),'Ground')]/following-sibling::div/text()",
         ),
         (
-            "Place of Birth",
+            "Place_of_Birth",
             "//div[@class='c-bio__field c-bio__field--border-bottom-small-screens']/div[2]/text()",
         ),
         (
@@ -401,18 +545,18 @@ class OfficialUFCFighterLoader(ItemLoader):
         (
             'Weight',
             "//div[@class = 'c-bio__label'][text() = 'Weight'] /following-sibling::div/text()"
-        )
+        ),
         (
             'Reach',
             "//div[@class = 'c-bio__label'][text() = 'Reach'] /following-sibling::div/text()"
         ),
         (
-            'Leg Reach',
+            'Leg_Reach',
             '//div[@class = "c-bio__label"][text() = "Leg reach"] /following-sibling::div/text()'
         ),
         (
             'Age',
-            '//div[@class = "c-bio__label"][text() = "Age"] /following-sibling::div/text()'
+            'normalize-space(//div[@class = "c-bio__label"][text() = "Age"] /following-sibling::div/text())'
         ),
         (
             'Head_SS',
@@ -441,6 +585,11 @@ class OfficialUFCFighterLoader(ItemLoader):
             else:
                 if locals()[field] in [None, [], ""]:
                     locals()[field] = self.add_value(field, "---")
+        # Placeholder for manually added items.
+        for field in ['DoB', 'College', 'Foundation_Styles', 'Head_Coach', 'Fighting_Out_Of']:
+            locals()[field] = self.add_value(field, "---")
+
+        self.load_item()
 
 
 class FighterImageLoader(ItemLoader):

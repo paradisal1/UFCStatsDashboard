@@ -48,6 +48,10 @@ create_OFFICIALUFCFIGHTERS_table_sql_string = """
         Activity text, Title_Holder text, PFP_Rank text,
         Listed_Fighting_Style text, Trains_At text,
         Standing_Strikes text, Clinch_Strikes text,
-        Ground_Strikes text, PlaceOfBirth text,
-        Record text)
+        Ground_Strikes text, Place_of_Birth text,
+        Record text, Height text, Weight text,
+        Reach text, Leg_Reach text, Age text,
+        Head_SS text, Body_SS text, Leg_SS text,
+        DoB text, College text, Foundation_Styles text,
+        Head_Coach text, Fighting_Out_Of text)
 """

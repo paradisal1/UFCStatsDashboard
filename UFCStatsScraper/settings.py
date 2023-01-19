@@ -21,14 +21,14 @@ ROBOTSTXT_OBEY = False
 DOWNLOADER_CLIENT_TLS_METHOD = "TLSv1.2"
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-# CONCURRENT_REQUESTS = 32
+CONCURRENT_REQUESTS = 32
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
 # DOWNLOAD_DELAY = 3
 # The download delay setting will honor only one of:
-CONCURRENT_REQUESTS_PER_DOMAIN = 16
+CONCURNT_REQUESTS_PER_DOMAIN = 16
 CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)
@@ -53,12 +53,12 @@ COOKIES_ENABLED = False
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-# DOWNLOADER_MIDDLEWARES = {
-#     "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": None,
-#     "scrapy_user_agents.middlewares.RandomUserAgentMiddleware": 400,
-#     # "scrapy_proxy_pool.middlewares.ProxyPoolMiddleware": 610,
-#     # "scrapy_proxy_pool.middlewares.BanDetectionMiddleware": 620,
-# }
+DOWNLOADER_MIDDLEWARES = {
+    "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": None,
+    "scrapy_user_agents.middlewares.RandomUserAgentMiddleware": 400,
+    # "scrapy_proxy_pool.middlewares.ProxyPoolMiddleware": 610,
+    # "scrapy_proxy_pool.middlewares.BanDetectionMiddleware": 620,
+}
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
@@ -68,11 +68,11 @@ COOKIES_ENABLED = False
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-ITEM_PIPELINES = {
-    "UFCStatsScraper.pipelines.MyImagePipeline": 298,
-    "UFCStatsScraper.pipelines.SQLPipeline": 300,
-}
-IMAGES_STORE = "app/database/images"
+# ITEM_PIPELINES = {
+#     "UFCStatsScraper.pipelines.MyImagePipeline": 298,
+#     "UFCStatsScraper.pipelines.SQLPipeline": 300,
+# }
+IMAGES_STORE = "UFCStatsGUI/database/images"
 IMAGES_URLS_FIELD = "image_urls"
 IMAGES_RESULT_FIELD = "images"
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -98,6 +98,24 @@ HTTPCACHE_ENABLED = True
 
 # Set settings whose default value is deprecated to a future-proof value
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
-TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
+# TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 
 # PROXY_POOL_ENABLED = True
+
+# RETRY_TIMES = 7
+# RETRY_HTTP_CODES = [500, 503, 504, 400, 403, 404, 408]
+# DOWNLOADER_MIDDLEWARES = {
+#     'scrapy.downloadermiddlewares.retry.RetryMiddleware': 90,
+#     'scrapy_proxies.RandomProxy': 100,
+#     'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 110,
+# }
+# PROXY_POOL_ENABLED = True
+
+CONCURRENT_ITEMS = 500
+CONCURRENT_REQUESTS = 100
+CONCURRENT_REQUESTS_PER_DOMAIN = 100
+RETRY_ENABLED = True
+RETRY_TIMES = 10
+
+# import asyncio
+# asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())

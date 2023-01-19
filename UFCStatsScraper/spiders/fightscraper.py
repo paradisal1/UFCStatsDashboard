@@ -3,6 +3,9 @@ from scrapy.linkextractors import LinkExtractor
 
 from UFCStatsScraper.scrapy_itemloaders import FightLoader
 
+import logging
+
+logger = logging.getLogger(__name__)
 
 class FightScraper(Spider):
     name = "fights"
@@ -33,7 +36,6 @@ class FightScraper(Spider):
     def parse_fight_pages(self, response):
         """Parses fight pages for fight details"""
         # return the loaded fight item
-        fighter_1_link = response.xpath("//div[@class='b-fight-details__person'][1]//a/@href")
-        fighter_2_link = response.xpath("//div[@class='b-fight-details__person'][2]//a/@href")
-        yield from response.follow(fighter_1_link, )
-        return FightLoader(response).load_item()
+        item = FightLoader(response).load_item()
+        logger.info(f"Fight item: {item}")
+        return item
